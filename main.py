@@ -4,10 +4,10 @@ from pyppeteer import launch
 import nest_asyncio
 nest_asyncio.apply()
 
-import json
+import praw
 
 cookie_modal_class = '.trdUvQxqQHHqQKOUBcgnr'
-num_comments = 2
+num_comments = 5
 darkMode = True
 
 async def removeClutter(p):
@@ -15,10 +15,21 @@ async def removeClutter(p):
         try {document.querySelector('%s').parentNode.removeChild(document.querySelector('%s'))} catch(e) {}
         try {document.querySelector('header').parentNode.innerHTML = ''} catch(e) {}
     }''' % (cookie_modal_class, cookie_modal_class))
-        
+
+def getURLs(limit):
+    reddit = praw.Reddit(
+        client_id="4zp40ZSixi1FPJpxGSQdSw",
+        client_secret="s1ZBy5yVhNMlXBq-yBl9LwNqkqYgUA",
+        password="Julius!JULIUS18",
+        user_agent="YouTube Shorts Bot by u/wachenpaul",
+        username="wachenpaul",
+    )
+    return ['https://reddit.com' + submission.permalink for submission in reddit.subreddit("askreddit").hot(limit=limit)]
+
 async def getText(p):
     data = await p.evaluate('''
                      () => {
+                             
                              comments1 = document.querySelectorAll('._1ump7uMrSA43cqok14tPrG > div > div > div > div > div[style="padding-left:16px"]')
                              comments2 = [] // document.querySelectorAll('._1ump7uMrSA43cqok14tPrG > div > div > div > div > div[style="padding-left:37px"]')
                              comments = [...comments1, ...comments2].slice(%s)
@@ -36,33 +47,39 @@ async def getText(p):
                      ''' % num_comments)
     return data
 
-async def getScreenshots():
+async def getScreenshots(url):
+    
+    print(url)
+    
     browser = await launch(headless=True)
     page = await browser.newPage()
-    await page.goto("https://www.reddit.com")
-    await page.evaluate('() => {window.sessionStorage.setItem("test", "bla")}')
-    # await page.goto('https://www.reddit.com/')
-    if darkMode: await page.setCookie({'name': 'USER', 'domain': '.reddit.com', 'value': 'eyJwcmVmcyI6eyJ0b3BDb250ZW50RGlzbWlzc2FsVGltZSI6MCwiZ2xvYmFsVGhlbWUiOiJSRURESVQiLCJuaWdodG1vZGUiOnRydWUsImNvbGxhcHNlZFRyYXlTZWN0aW9ucyI6eyJmYXZvcml0ZXMiOmZhbHNlLCJtdWx0aXMiOmZhbHNlLCJtb2RlcmF0aW5nIjpmYWxzZSwic3Vic2NyaXB0aW9ucyI6ZmFsc2UsInByb2ZpbGVzIjpmYWxzZX0sInRvcENvbnRlbnRUaW1lc0Rpc21pc3NlZCI6MH19'})
     
-    await page.goto('https://www.reddit.com/r/AskReddit/comments/w4uxui/if_you_could_have_any_rare_no_longer_available/')
+    if darkMode: await page.setCookie({'name': 'USER', 'domain': '.reddit.com', 'value': 'eyJwcmVmcyI6eyJ0b3BDb250ZW50RGlzbWlzc2FsVGltZSI6MCwiZ2xvYmFsVGhlbWUiOiJSRURESVQiLCJuaWdodG1vZGUiOnRydWUsImNvbGxhcHNlZFRyYXlTZWN0aW9ucyI6eyJmYXZvcml0ZXMiOmZhbHNlLCJtdWx0aXMiOmZhbHNlLCJtb2RlcmF0aW5nIjpmYWxzZSwic3Vic2NyaXB0aW9ucyI6ZmFsc2UsInByb2ZpbGVzIjpmYWxzZX0sInRvcENvbnRlbnRUaW1lc0Rpc21pc3NlZCI6MH19'})
+    await page.setCookie({'name': 'over18', 'domain': '.reddit.com', 'value': 'true'})
+    
+    await page.goto(url)
+    
+    await page.screenshot({'path': 'page.png'})
     
     await removeClutter(page)
     txt = await getText(page)
-        
+    
     heading = await page.J('[data-testid="post-container"]')
     comments = await page.JJ('._1ump7uMrSA43cqok14tPrG > div > div > div > div > div[style="padding-left:16px"]')
     comments = comments + await page.JJ('._1ump7uMrSA43cqok14tPrG > div > div > div > div > div[style="padding-left:37px"]')
     
     await heading.screenshot({'path':'heading.png'})
-    
     for i, comment in enumerate(comments[:num_comments]):
         await comment.screenshot({'path': f'comment{i}.png'})
+    
     await browser.close()
     return txt
-    
-text = asyncio.run(getScreenshots())
 
-''' Hier ein Snippet für Bilder Overlay über das Video:
+asyncio.run(getScreenshots(getURLs(2)[1]))
+
+
+''' 
+    Hier ein Snippet für Bilder Overlay über das Video:
     
     import cv2
     import os
@@ -85,4 +102,4 @@ text = asyncio.run(getScreenshots())
     cv2.destroyAllWindows()
     video.release()
 
-'''
+'''''
